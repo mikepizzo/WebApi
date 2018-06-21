@@ -29,7 +29,7 @@ namespace Microsoft.Test.E2E.AspNet.OData.BoundOperation
                     City = "City" + i,
                 },
                 Emails = Enumerable.Range(1, i).Select(j => string.Format("Name{0}_{1}@microsoft.com", i, j)).ToList(),
-                Salary = i * 10,
+                Salary = i * 3 * 10000,
                 Heads = i,
             }).ToList();
 
@@ -44,7 +44,7 @@ namespace Microsoft.Test.E2E.AspNet.OData.BoundOperation
                     City = "City" + i,
                 },
                 Emails = Enumerable.Range(1, i).Select(j => string.Format("Name{0}_{1}@microsoft.com", i, j)).ToList(),
-                Salary = i * 10,
+                Salary = i * 2 * 10000,
             }).ToList();
 
             int k = 20;
@@ -59,7 +59,7 @@ namespace Microsoft.Test.E2E.AspNet.OData.BoundOperation
                     City = "City" + k,
                 },
                 Emails = new List<string>(),
-                Salary = k * 10,
+                Salary = k * 2 * 10000,
             });
 
 
@@ -272,6 +272,24 @@ namespace Microsoft.Test.E2E.AspNet.OData.BoundOperation
 
             return Ok();
         }
+
+        //// ~/Employees/Namespace.GetCount(minSalary=60000)
+        //// ~/Employees/Namespace.GetCount(minSalary=60000, maxSalary=80000)
+        //[HttpGet]
+        //[ODataRoute("Employees/Default.GetCount(minSalary={minSalary},maxSalary={maxSalary})")]
+        //public int GetCountAttributeRouting([FromODataUri]decimal minSalary, [FromODataUri]decimal maxSalary)
+        //{
+        //    return _employees.Where(e => e.Salary >= minSalary && e.Salary <= maxSalary).Count();
+        //}
+
+        // ~/Employees/Namespace.GetCount(minSalary=60000)
+        // ~/Employees/Namespace.GetCount(minSalary=60000, maxSalary=80000)
+        [HttpGet]
+        public int GetCount(decimal minSalary, decimal maxSalary)
+        {
+            return _employees.Where(e => e.Salary >= minSalary && e.Salary <= maxSalary).Count();
+        }
+
 
         private static void VerifyEmployee(Employee employee)
         {

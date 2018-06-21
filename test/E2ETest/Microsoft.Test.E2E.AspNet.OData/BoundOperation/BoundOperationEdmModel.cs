@@ -27,6 +27,12 @@ namespace Microsoft.Test.E2E.AspNet.OData.BoundOperation
                 .Returns<int>()
                 .Parameter<string>("Name");
 
+            // Overload with one optional parameter
+            var salaryRangeCount = entityTypeConfigurationOfEmployee.Collection.Function("GetCount")
+                .Returns<int>();
+            salaryRangeCount.Parameter<decimal>("minSalary");
+            salaryRangeCount.Parameter<decimal>("maxSalary").IsOptional = true;
+
             // Function bound to a collection of derived EntityType.
             entityTypeConfigurationOfManager.Collection.Function("GetCount")
                 .Returns<int>();

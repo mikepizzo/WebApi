@@ -90,12 +90,19 @@ namespace Microsoft.Test.E2E.AspNet.OData.BoundOperation
             #region functions
             // Function GetCount
             var iEdmOperationsOfGetCount = edmModel.FindDeclaredOperations("Default.GetCount");
-            Assert.Equal(3, iEdmOperationsOfGetCount.Count());
+            Assert.Equal(4, iEdmOperationsOfGetCount.Count());
 
             //     (Collection(Employee)).GetCount(String Name)
             var getCount = iEdmOperationsOfGetCount.Where(f => f.Parameters.Count() == 2);
             Assert.Single(getCount);
 
+            //     (Collection(Employee)).GetCount(Decimal MinSalary, Decimal MaxSalaray = 75000)
+            var getCountOptional = iEdmOperationsOfGetCount.Where(f => f.Parameters.Count() == 3);
+            Assert.Single(getCountOptional);
+            var optionalParameter = getCountOptional.Single().Parameters.Where(p => p.Name == "MaxSalary");
+            Assert.Single(optionalParameter);
+            Assert.IsAssignableFrom<IEdmOptionalParameter>(optionalParameter.Single());
+            
             //     (Collection(Manager)).GetCount()
             foreach (var t in iEdmOperationsOfGetCount)
             {
@@ -331,6 +338,27 @@ namespace Microsoft.Test.E2E.AspNet.OData.BoundOperation
         [InlineData("ConventionRouting/Employees(1)/Default.GetEmailsCount()", 1)]//Convention routing
         [InlineData("AttributeRouting/Employees(1)/Default.GetEmailsCount()", 2)]//Attribute routing
         public async Task FunctionBoundToEntityType(string url, int expectedCount)
+        {
+            // Arrange
+            var requestUri = string.Format("{0}/{1}", this.BaseAddress, url);
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+
+            // Act
+            HttpResponseMessage response = await Client.GetAsync(requestUri);
+            string responseString = await response.Content.ReadAsStringAsync();
+
+            // Assert
+            Assert.True(response.IsSuccessStatusCode);
+            Assert.Contains("/$metadata#Edm.Int32", responseString);
+            Assert.Contains(string.Format(@"""value"":{0}", expectedCount), responseString);
+        }
+
+        [Theory]
+        [InlineData("ConventionRouting/Employees/Default.GetCount(minSalary=60000)", 2)]//Convention routing
+        [InlineData("AttributeRouting/Employees/Default.GetCount(minSalary=60000)", 2)]//Attribute routing
+        [InlineData("ConventionRouting/Employees/Default.GetCount(minSalary=60000,maxSalary=80000)", 3)]//Convention routing
+        [InlineData("AttributeRouting/Employees/Default.GetCount(minSalary=60000,maxSalary=80000)", 3)]//Attribute routing
+        public async Task FunctionWithOptionalParamsBoundToEntityType(string url, int expectedCount)
         {
             // Arrange
             var requestUri = string.Format("{0}/{1}", this.BaseAddress, url);

@@ -212,6 +212,14 @@ namespace Microsoft.AspNet.OData.Batch
                 response.Headers[header.Key] = header.Value;
             }
 
+#if !NETSTANDARD2_0
+                var body = request.HttpContext.Features.Get<AspNetCore.Http.Features.IHttpBodyControlFeature>();
+                if (body != null)
+                {
+                    body.AllowSynchronousIO = true;
+                }
+#endif
+
             return batchContent.SerializeToStreamAsync(response.Body);
         }
 

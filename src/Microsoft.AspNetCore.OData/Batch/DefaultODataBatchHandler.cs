@@ -40,6 +40,14 @@ namespace Microsoft.AspNet.OData.Batch
                 return;
             }
 
+#if !NETSTANDARD2_0
+                var body = context.Features.Get<AspNetCore.Http.Features.IHttpBodyControlFeature>();
+                if (body != null)
+                {
+                    body.AllowSynchronousIO = true;
+                }
+#endif
+
             IList<ODataBatchRequestItem> subRequests = await ParseBatchRequestsAsync(context);
 
             ODataOptions options = context.RequestServices.GetRequiredService<ODataOptions>();
@@ -108,9 +116,9 @@ namespace Microsoft.AspNet.OData.Batch
 
             CancellationToken cancellationToken = context.RequestAborted;
             List<ODataBatchRequestItem> requests = new List<ODataBatchRequestItem>();
-            ODataBatchReader batchReader = await reader.CreateODataBatchReaderAsync();
+            ODataBatchReader batchReader = reader.CreateODataBatchReader();
             Guid batchId = Guid.NewGuid();
-            while (await batchReader.ReadAsync())
+            while (batchReader.Read())
             {
                 if (batchReader.State == ODataBatchReaderState.ChangesetStart)
                 {

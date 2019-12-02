@@ -34,7 +34,7 @@ using Xunit;
 namespace Microsoft.Test.E2E.AspNet.OData.QueryComposition
 {
 #if NETCORE
-#if NETCOREAPP2_1
+#if NETCORE2x
     public class JsonpMediaTypeFormatter : JsonOutputFormatter
 #else
     public class JsonpMediaTypeFormatter : NewtonsoftJsonOutputFormatter
@@ -51,7 +51,7 @@ namespace Microsoft.Test.E2E.AspNet.OData.QueryComposition
         public static JsonpMediaTypeFormatter Create(WebRouteConfiguration configuration)
         {
 #if NETCORE
-#if NETCOREAPP2_1
+#if NETCORE2x
             var options = configuration.ServiceProvider.GetRequiredService<IOptions<MvcJsonOptions>>().Value;
             var charPool = configuration.ServiceProvider.GetRequiredService<ArrayPool<char>>();
             options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
@@ -68,7 +68,7 @@ namespace Microsoft.Test.E2E.AspNet.OData.QueryComposition
         }
 
 #if NETCORE
-#if NETCOREAPP2_1
+#if NETCORE2x
         private JsonpMediaTypeFormatter(JsonSerializerSettings serializerSettings, ArrayPool<char> charPool)
         : base(serializerSettings, charPool)
 #else

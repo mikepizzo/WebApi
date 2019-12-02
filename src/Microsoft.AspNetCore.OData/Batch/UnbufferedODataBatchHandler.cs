@@ -36,6 +36,14 @@ namespace Microsoft.AspNet.OData.Batch
                 return;
             }
 
+#if !NETSTANDARD2_0
+            var body = context.Features.Get<AspNetCore.Http.Features.IHttpBodyControlFeature>();
+            if (body != null)
+            {
+                body.AllowSynchronousIO = true;
+            }
+#endif
+
             // This container is for the overall batch request.
             HttpRequest request = context.Request;
             IServiceProvider requestContainer = request.CreateRequestContainer(ODataRouteName);
@@ -43,7 +51,7 @@ namespace Microsoft.AspNet.OData.Batch
 
             ODataMessageReader reader = request.GetODataMessageReader(requestContainer);
 
-            ODataBatchReader batchReader = await reader.CreateODataBatchReaderAsync();
+            ODataBatchReader batchReader = reader.CreateODataBatchReader();
             List<ODataBatchResponseItem> responses = new List<ODataBatchResponseItem>();
             Guid batchId = Guid.NewGuid();
 
@@ -54,7 +62,7 @@ namespace Microsoft.AspNet.OData.Batch
 
             SetContinueOnError(new WebApiRequestHeaders(request.Headers), enableContinueOnErrorHeader);
 
-            while (await batchReader.ReadAsync())
+            while (batchReader.Read())
             {
                 ODataBatchResponseItem responseItem = null;
                 if (batchReader.State == ODataBatchReaderState.ChangesetStart)
@@ -140,7 +148,7 @@ namespace Microsoft.AspNet.OData.Batch
             Guid changeSetId = Guid.NewGuid();
             List<HttpContext> changeSetResponse = new List<HttpContext>();
             Dictionary<string, string> contentIdToLocationMapping = new Dictionary<string, string>();
-            while (await batchReader.ReadAsync() && batchReader.State != ODataBatchReaderState.ChangesetEnd)
+            while (batchReader.Read() && batchReader.State != ODataBatchReaderState.ChangesetEnd)
             {
                 if (batchReader.State == ODataBatchReaderState.Operation)
                 {

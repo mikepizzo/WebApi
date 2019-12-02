@@ -108,9 +108,9 @@ namespace Microsoft.AspNet.OData.Batch
 
             CancellationToken cancellationToken = context.RequestAborted;
             List<ODataBatchRequestItem> requests = new List<ODataBatchRequestItem>();
-            ODataBatchReader batchReader = await reader.CreateODataBatchReaderAsync();
+            ODataBatchReader batchReader = reader.CreateODataBatchReader();
             Guid batchId = Guid.NewGuid();
-            while (await batchReader.ReadAsync())
+            while (batchReader.Read())
             {
                 if (batchReader.State == ODataBatchReaderState.ChangesetStart)
                 {

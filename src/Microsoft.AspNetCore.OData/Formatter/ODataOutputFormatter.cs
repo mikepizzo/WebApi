@@ -5,9 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNet.OData.Adapters;
 using Microsoft.AspNet.OData.Common;
@@ -203,14 +205,6 @@ namespace Microsoft.AspNet.OData.Formatter
 
             try
             {
-#if !NETCOREAPP2_0
-                var body = request.HttpContext.Features.Get<AspNetCore.Http.Features.IHttpBodyControlFeature>();
-                if (body != null)
-                {
-                    body.AllowSynchronousIO = true;
-                }
-#endif
-
                 HttpResponse response = context.HttpContext.Response;
                 Uri baseAddress = GetBaseAddressInternal(request);
                 MediaTypeHeaderValue contentType = GetContentType(response.Headers[HeaderNames.ContentType].FirstOrDefault());
@@ -224,7 +218,11 @@ namespace Microsoft.AspNet.OData.Formatter
                 };
 
                 ODataSerializerProvider serializerProvider = request.GetRequestContainer().GetRequiredService<ODataSerializerProvider>();
-
+#if NETSTANDARD2_0
+                Stream writeStream = response.Body; 
+#else
+                Stream writeStream = new AsyncStreamWrapper(response.Body);
+#endif
                 ODataOutputFormatterHelper.WriteToStream(
                     type,
                     context.Object,
@@ -235,7 +233,7 @@ namespace Microsoft.AspNet.OData.Formatter
                     new WebApiUrlHelper(request.GetUrlHelper()),
                     new WebApiRequestMessage(request),
                     new WebApiRequestHeaders(request.Headers),
-                    (services) => ODataMessageWrapperHelper.Create(response.Body, response.Headers, services),
+                    (services) => ODataMessageWrapperHelper.Create(writeStream, response.Headers, services),
                     (edmType) => serializerProvider.GetEdmTypeSerializer(edmType),
                     (objectType) => serializerProvider.GetODataPayloadSerializer(objectType, request),
                     getODataSerializerContext);
@@ -298,5 +296,145 @@ namespace Microsoft.AspNet.OData.Formatter
 
             return contentType;
         }
+
+#if !NETSTANDARD2_0
+        internal class AsyncStreamWrapper : Stream
+        {
+            private Stream stream;
+            public AsyncStreamWrapper(Stream stream)
+            {
+                this.stream = stream;
+            }
+
+            public override bool CanRead => this.stream.CanRead;
+
+            public override bool CanSeek => this.stream.CanSeek;
+
+            public override bool CanWrite => this.stream.CanWrite;
+
+            public override long Length => this.stream.Length;
+
+            public override long Position { get => this.stream.Position; set => this.stream.Position = value; }
+
+            public override void Flush()
+            {
+                this.stream.FlushAsync().Wait();
+            }
+
+            public override Task FlushAsync(CancellationToken cancellationToken)
+            {
+                return this.stream.FlushAsync(cancellationToken);
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                return Task.Run<int>(() => this.stream.ReadAsync(buffer, offset, count)).Result;
+            }
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                return this.stream.ReadAsync(buffer, offset, count, cancellationToken);
+            }
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                return this.stream.ReadAsync(buffer, cancellationToken);
+            }
+
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                return this.stream.WriteAsync(buffer, cancellationToken);
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                return this.stream.Seek(offset, origin);
+            }
+
+            public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            {
+                return this.stream.CopyToAsync(destination, bufferSize, cancellationToken);
+            }
+
+            public override void CopyTo(Stream destination, int bufferSize)
+            {
+                Task.Run(() => this.stream.CopyToAsync(destination, bufferSize)).Wait();
+            }
+
+            public override void SetLength(long value)
+            {
+                this.stream.SetLength(value);
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                Task.Run(() => this.stream.WriteAsync(buffer, offset, count)).Wait();
+            }
+
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                return this.stream.WriteAsync(buffer, offset, count, cancellationToken);
+            }
+
+            public override ValueTask DisposeAsync()
+            {
+                return this.stream.DisposeAsync();
+            }
+
+            public override void WriteByte(byte value)
+            {
+                Contract.Assert(true, "Calling WriteByte on an asynchronous reader.");
+                this.stream.WriteByte(value);
+            }
+
+            public override int ReadByte()
+            {
+                Contract.Assert(true, "Calling ReadByte on asynchronous reader.");
+                return Task.Run<int>(() => this.stream.ReadByte()).Result;
+            }
+
+            public override int Read(Span<byte> buffer)
+            {
+                Contract.Assert(true, "Calling Read(Span<byte> buffer) on asynchronous reader.");
+                return this.stream.Read(buffer);
+            }
+
+            public override void Write(ReadOnlySpan<byte> buffer)
+            {
+                Contract.Assert(true, "Calling Write(ReadOnlySpan<byte> buffer) on asynchronous reader.");
+                this.stream.Write(buffer);
+            }
+
+            public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+            {
+                return this.stream.BeginRead(buffer, offset, count, callback, state);
+            }
+
+            public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+            {
+                return this.stream.BeginWrite(buffer, offset, count, callback, state);
+            }
+
+            public override int EndRead(IAsyncResult asyncResult)
+            {
+                return this.stream.EndRead(asyncResult);
+            }
+
+            public override void EndWrite(IAsyncResult asyncResult)
+            {
+                this.stream.EndWrite(asyncResult);
+            }
+
+            public new void Dispose()
+            {
+                Task.Run(() => this.stream.DisposeAsync()).Wait();
+            }
+
+            public new void Dispose(bool disposing)
+            {
+                Task.Run(() => this.stream.DisposeAsync()).Wait();
+            }
+        }
+#endif
     }
 }

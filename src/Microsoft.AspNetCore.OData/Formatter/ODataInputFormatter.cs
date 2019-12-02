@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
@@ -119,14 +120,6 @@ namespace Microsoft.AspNet.OData.Formatter
 
             try
             {
-#if !NETCOREAPP2_0
-                var body = request.HttpContext.Features.Get<AspNetCore.Http.Features.IHttpBodyControlFeature>();
-                if (body != null)
-                {
-                    body.AllowSynchronousIO = true;
-                }
-#endif
-
                 Func<ODataDeserializerContext> getODataDeserializerContext = () =>
                 {
                     return new ODataDeserializerContext
@@ -150,13 +143,19 @@ namespace Microsoft.AspNet.OData.Formatter
 
                 ODataDeserializerProvider deserializerProvider = request.GetRequestContainer().GetRequiredService<ODataDeserializerProvider>();
 
+#if NETSTANDARD2_0
+                Stream readStream = request.Body; 
+#else
+                Stream readStream = new ODataOutputFormatter.AsyncStreamWrapper(request.Body);
+#endif
+
                 object result = ODataInputFormatterHelper.ReadFromStream(
                     type,
                     defaultValue,
                     request.GetModel(),
                     GetBaseAddressInternal(request),
                     new WebApiRequestMessage(request),
-                    () => ODataMessageWrapperHelper.Create(request.Body, request.Headers, request.GetODataContentIdMapping(), request.GetRequestContainer()),
+                    () => ODataMessageWrapperHelper.Create(readStream, request.Headers, request.GetODataContentIdMapping(), request.GetRequestContainer()),
                     (objectType) => deserializerProvider.GetEdmTypeDeserializer(objectType),
                     (objectType) => deserializerProvider.GetODataDeserializer(objectType, request),
                     getODataDeserializerContext,

@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -211,8 +212,13 @@ namespace Microsoft.AspNet.OData.Batch
                 // Copy headers from batch content, overwriting any existing headers.
                 response.Headers[header.Key] = header.Value;
             }
+#if NETSTANDARD2_0
+            Stream writeStream = response.Body; 
+#else
+            Stream writeStream = new ODataOutputFormatter.AsyncStreamWrapper(response.Body);
+#endif
 
-            return batchContent.SerializeToStreamAsync(response.Body);
+            return batchContent.SerializeToStreamAsync(writeStream);
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "Caller is responsible for disposing the object.")]

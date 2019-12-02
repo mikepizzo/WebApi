@@ -3,8 +3,10 @@
 
 using System;
 using System.ComponentModel;
+using System.IO;
 using Microsoft.AspNet.OData.Common;
 using Microsoft.AspNet.OData.Extensions;
+using Microsoft.AspNet.OData.Formatter;
 using Microsoft.AspNet.OData.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,7 +48,12 @@ namespace Microsoft.AspNet.OData.Batch
                 throw Error.ArgumentNull("request");
             }
 
-            IODataRequestMessage oDataRequestMessage = ODataMessageWrapperHelper.Create(request.Body, request.Headers, requestContainer);
+#if NETSTANDARD2_0
+            Stream readStream = request.Body; 
+#else
+            Stream readStream = new ODataOutputFormatter.AsyncStreamWrapper(request.Body);
+#endif
+            IODataRequestMessage oDataRequestMessage = ODataMessageWrapperHelper.Create(readStream, request.Headers, requestContainer);
             ODataMessageReaderSettings settings = requestContainer.GetRequiredService<ODataMessageReaderSettings>();
             ODataMessageReader oDataMessageReader = new ODataMessageReader(oDataRequestMessage, settings);
             return oDataMessageReader;

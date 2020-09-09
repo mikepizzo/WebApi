@@ -18,6 +18,7 @@ namespace Microsoft.AspNet.OData.Formatter.Deserialization
         /// </summary>
         /// <param name="reader">The OData reader to read from.</param>
         /// <returns>The read resource or resource set.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public static ODataItemBase ReadResourceOrResourceSet(this ODataReader reader)
         {
             if (reader == null)
@@ -71,7 +72,45 @@ namespace Microsoft.AspNet.OData.Formatter.Deserialization
                             "The resource which is ending should be on the top of the items stack.");
                         itemsStack.Pop();
                         break;
+                    case ODataReaderState.DeletedResourceStart:
+                        ODataDeletedResource deletedResource = (ODataDeletedResource)reader.Item;
+                        ODataResourceWrapper deletedResourceWrapper = null;
+                        if (deletedResource != null)
+                        {
+                            deletedResourceWrapper = new ODataResourceWrapper(deletedResource,true);
+                        }
 
+                        if (itemsStack.Count == 0)
+                        {
+                            Contract.Assert(deletedResource != null, "The top-level resource can never be null.");
+                            topLevelItem = deletedResourceWrapper;
+                        }
+                        else
+                        {
+                            ODataItemBase parentItem = itemsStack.Peek();
+                            ODataResourceSetWrapper parentResourceSet = parentItem as ODataResourceSetWrapper;
+                            if (parentResourceSet != null)
+                            {
+                                parentResourceSet.Resources.Add(deletedResourceWrapper);
+                            }
+                            else
+                            {
+                                ODataNestedResourceInfoWrapper parentNestedResource = (ODataNestedResourceInfoWrapper)parentItem;
+                                Contract.Assert(parentNestedResource.NestedResourceInfo.IsCollection == false, "Only singleton nested properties can contain resource as their child.");
+                                Contract.Assert(parentNestedResource.NestedItems.Count == 0, "Each nested property can contain only one resource as its direct child.");
+                                parentNestedResource.NestedItems.Add(deletedResourceWrapper);
+                            }
+                        }
+
+                        itemsStack.Push(deletedResourceWrapper);
+                        break;
+
+                    case ODataReaderState.DeletedResourceEnd:
+                        Contract.Assert(
+                            itemsStack.Count > 0 && (reader.Item == null || itemsStack.Peek().Item == reader.Item),
+                            "The resource which is ending should be on the top of the items stack.");
+                        itemsStack.Pop();
+                        break;
                     case ODataReaderState.NestedResourceInfoStart:
                         ODataNestedResourceInfo nestedResourceInfo = (ODataNestedResourceInfo)reader.Item;
                         Contract.Assert(nestedResourceInfo != null, "nested resource info should never be null.");
@@ -129,7 +168,54 @@ namespace Microsoft.AspNet.OData.Formatter.Deserialization
                         }
 
                         break;
+                    case ODataReaderState.DeltaResourceSetStart:
+                        ODataDeltaResourceSet deltaResourceSet = (ODataDeltaResourceSet)reader.Item;
+                        Contract.Assert(deltaResourceSet != null, "ResourceSet should never be null.");
 
+                        ODataResourceSetWrapper deltaResourceSetWrapper = new ODataResourceSetWrapper(deltaResourceSet,true);
+                        if (itemsStack.Count > 0)
+                        {
+                            ODataNestedResourceInfoWrapper parentNestedResourceInfo = (ODataNestedResourceInfoWrapper)itemsStack.Peek();
+                            Contract.Assert(parentNestedResourceInfo != null, "this has to be an inner resource set. inner resource sets always have a nested resource info.");
+                            Contract.Assert(parentNestedResourceInfo.NestedResourceInfo.IsCollection == true, "Only collection nested properties can contain resource set as their child.");
+                            parentNestedResourceInfo.NestedItems.Add(deltaResourceSetWrapper);
+                        }
+                        else
+                        {
+                            topLevelItem = deltaResourceSetWrapper;
+                        }
+
+                        itemsStack.Push(deltaResourceSetWrapper);
+                        break;
+
+                    case ODataReaderState.DeltaResourceSetEnd:
+                        Contract.Assert(itemsStack.Count > 0 && itemsStack.Peek().Item == reader.Item, "The resource set which is ending should be on the top of the items stack.");
+                        itemsStack.Pop();
+                        break;
+                    case ODataReaderState.DeltaLink:
+                        ODataDeltaLink deltaLink = (ODataDeltaLink)reader.Item;
+                        Contract.Assert(deltaLink != null, "Delta link should never be null.");
+
+                        ODataDeltaLinkWrapper deltaLinkWrapper = new ODataDeltaLinkWrapper(deltaLink);
+
+                        Contract.Assert(itemsStack.Count > 0, "Delta link should never be reported as top-level item.");
+                        {
+                            ODataResourceSetWrapper linkResourceSetWrapper = (ODataResourceSetWrapper)itemsStack.Peek();
+                            linkResourceSetWrapper.DeltaLinks.Add(deltaLinkWrapper);
+                        }
+                        break;
+                    case ODataReaderState.DeltaDeletedLink:
+                        ODataDeltaDeletedLink deltaDeletedLink = (ODataDeltaDeletedLink)reader.Item;
+                        Contract.Assert(deltaDeletedLink != null, "Delta deleted link should never be null.");
+
+                        ODataDeltaLinkWrapper deltaDeletedLinkWrapper = new ODataDeltaLinkWrapper(deltaDeletedLink,true);
+
+                        Contract.Assert(itemsStack.Count > 0, "Delta deleted link should never be reported as top-level item.");
+                        {
+                            ODataResourceSetWrapper linkResourceSetWrapper = (ODataResourceSetWrapper)itemsStack.Peek();
+                            linkResourceSetWrapper.DeltaLinks.Add(deltaDeletedLinkWrapper);
+                        }
+                        break;
                     default:
                         Contract.Assert(false, "We should never get here, it means the ODataReader reported a wrong state.");
                         break;

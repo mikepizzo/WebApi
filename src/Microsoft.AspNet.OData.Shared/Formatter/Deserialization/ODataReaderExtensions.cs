@@ -77,7 +77,7 @@ namespace Microsoft.AspNet.OData.Formatter.Deserialization
                         ODataResourceWrapper deletedResourceWrapper = null;
                         if (deletedResource != null)
                         {
-                            deletedResourceWrapper = new ODataResourceWrapper(deletedResource,true);
+                            deletedResourceWrapper = new ODataResourceWrapper(deletedResource);
                         }
 
                         if (itemsStack.Count == 0)
@@ -172,7 +172,7 @@ namespace Microsoft.AspNet.OData.Formatter.Deserialization
                         ODataDeltaResourceSet deltaResourceSet = (ODataDeltaResourceSet)reader.Item;
                         Contract.Assert(deltaResourceSet != null, "ResourceSet should never be null.");
 
-                        ODataResourceSetWrapper deltaResourceSetWrapper = new ODataResourceSetWrapper(deltaResourceSet,true);
+                        ODataResourceSetWrapper deltaResourceSetWrapper = new ODataResourceSetWrapper(deltaResourceSet);
                         if (itemsStack.Count > 0)
                         {
                             ODataNestedResourceInfoWrapper parentNestedResourceInfo = (ODataNestedResourceInfoWrapper)itemsStack.Peek();

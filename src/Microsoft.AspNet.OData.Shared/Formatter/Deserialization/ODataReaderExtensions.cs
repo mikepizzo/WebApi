@@ -49,10 +49,10 @@ namespace Microsoft.AspNet.OData.Formatter.Deserialization
                         else
                         {
                             ODataItemBase parentItem = itemsStack.Peek();
-                            ODataResourceSetWrapper parentResourceSet = parentItem as ODataResourceSetWrapper;
+                            ODataResourceSetWrapperBase parentResourceSet = parentItem as ODataResourceSetWrapperBase;
                             if (parentResourceSet != null)
                             {
-                                parentResourceSet.Resources.Add(resourceWrapper);
+                                parentResourceSet.Resources.Add(resourceWrapper);                           
                             }
                             else
                             {
@@ -172,7 +172,7 @@ namespace Microsoft.AspNet.OData.Formatter.Deserialization
                         ODataDeltaResourceSet deltaResourceSet = (ODataDeltaResourceSet)reader.Item;
                         Contract.Assert(deltaResourceSet != null, "ResourceSet should never be null.");
 
-                        ODataResourceSetWrapper deltaResourceSetWrapper = new ODataResourceSetWrapper(deltaResourceSet);
+                        ODataDeltaResourceSetWrapper deltaResourceSetWrapper = new ODataDeltaResourceSetWrapper(deltaResourceSet);
                         if (itemsStack.Count > 0)
                         {
                             ODataNestedResourceInfoWrapper parentNestedResourceInfo = (ODataNestedResourceInfoWrapper)itemsStack.Peek();
@@ -200,20 +200,20 @@ namespace Microsoft.AspNet.OData.Formatter.Deserialization
 
                         Contract.Assert(itemsStack.Count > 0, "Delta link should never be reported as top-level item.");
                         {
-                            ODataResourceSetWrapper linkResourceSetWrapper = (ODataResourceSetWrapper)itemsStack.Peek();
-                            linkResourceSetWrapper.DeltaLinks.Add(deltaLinkWrapper);
+                            ODataResourceSetWrapperBase linkResourceSetWrapper = (ODataResourceSetWrapperBase)itemsStack.Peek();
+                            linkResourceSetWrapper.Resources.Add(deltaLinkWrapper);
                         }
                         break;
                     case ODataReaderState.DeltaDeletedLink:
                         ODataDeltaDeletedLink deltaDeletedLink = (ODataDeltaDeletedLink)reader.Item;
                         Contract.Assert(deltaDeletedLink != null, "Delta deleted link should never be null.");
 
-                        ODataDeltaLinkWrapper deltaDeletedLinkWrapper = new ODataDeltaLinkWrapper(deltaDeletedLink,true);
+                        ODataDeltaLinkWrapper deltaDeletedLinkWrapper = new ODataDeltaLinkWrapper(deltaDeletedLink);
 
                         Contract.Assert(itemsStack.Count > 0, "Delta deleted link should never be reported as top-level item.");
                         {
-                            ODataResourceSetWrapper linkResourceSetWrapper = (ODataResourceSetWrapper)itemsStack.Peek();
-                            linkResourceSetWrapper.DeltaLinks.Add(deltaDeletedLinkWrapper);
+                            ODataResourceSetWrapperBase linkResourceSetWrapper = (ODataResourceSetWrapperBase)itemsStack.Peek();
+                            linkResourceSetWrapper.Resources.Add(deltaDeletedLinkWrapper);
                         }
                         break;
                     default:

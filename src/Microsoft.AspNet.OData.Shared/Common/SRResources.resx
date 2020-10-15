@@ -928,4 +928,7 @@
   <data name="ReturnTypeOfOperationNotSpecified" xml:space="preserve">
     <value>Return type of operation is not specified.</value>
   </data>
+  <data name="ResourcesShouldbePresent" xml:space="preserve">
+    <value>ResourceSetWrapper should have ResourceWrappers in it</value>
+  </data>
 </root>

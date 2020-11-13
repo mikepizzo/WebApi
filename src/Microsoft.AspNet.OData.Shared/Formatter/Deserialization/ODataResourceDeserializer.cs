@@ -154,7 +154,6 @@ namespace Microsoft.AspNet.OData.Formatter.Deserialization
                 IEdmTypeReference actualStructuredType;
                 IEdmEntityType actualEntityType = actualType as IEdmEntityType;
 
-
                 if (actualEntityType != null)
                 {
                     actualStructuredType = new EdmEntityTypeReference(actualEntityType, isNullable: false);

@@ -161,7 +161,7 @@ namespace Microsoft.AspNet.OData.Formatter.Deserialization
 
                         Contract.Assert(linkResourceSetWrapper != null, "ODataDeltaResourceSetWrapper for delta link should not be null.");
 
-                        linkResourceSetWrapper.Resources.Add(deltaLinkWrapper);
+                        linkResourceSetWrapper.Items.Add(deltaLinkWrapper);
                         
                         break;
         
@@ -190,7 +190,7 @@ namespace Microsoft.AspNet.OData.Formatter.Deserialization
             ODataResourceSetWrapper parentResourceSet = parentItem as ODataResourceSetWrapper;
             if (parentResourceSet != null)
             {
-                parentResourceSet.Resources.Add(resourceWrapper);
+                parentResourceSet.Items.Add(resourceWrapper);
             }
             else
             {

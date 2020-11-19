@@ -436,7 +436,7 @@ namespace Microsoft.AspNet.OData.Test.Formatter.Deserialization
             });
             foreach (var complexResource in complexResources)
             {
-                resourceSetWrapper.Resources.Add(new ODataResourceWrapper(complexResource));
+                resourceSetWrapper.Items.Add(new ODataResourceWrapper(complexResource));
             }
             resourceInfoWrapper.NestedItems.Add(resourceSetWrapper);
             topLevelResourceWrapper.NestedResourceInfos.Add(resourceInfoWrapper);
@@ -805,7 +805,7 @@ namespace Microsoft.AspNet.OData.Test.Formatter.Deserialization
                 model.Customer.FindProperty("Orders"),
                 new ClrPropertyInfoAnnotation(typeof(Customer).GetProperty("AliasedOrders")));
             ODataResourceSetWrapper resourceSetWrapper = new ODataResourceSetWrapper(new ODataResourceSet());
-            resourceSetWrapper.Resources.Add(new ODataResourceWrapper(
+            resourceSetWrapper.Items.Add(new ODataResourceWrapper(
                 new ODataResource { Properties = new[] { new ODataProperty { Name = "ID", Value = 42 } } }));
 
             Customer customer = new Customer();

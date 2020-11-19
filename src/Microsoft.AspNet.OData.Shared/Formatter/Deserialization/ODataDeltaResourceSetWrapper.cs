@@ -18,10 +18,14 @@ namespace Microsoft.AspNet.OData.Formatter.Deserialization
         public ODataDeltaResourceSetWrapper(ODataDeltaResourceSet item)
             : base(item)
         {
-           
+            this.Items = new List<ODataItemBase>();
         }
 
         internal override ResourceSetType ResourceSetType => ResourceSetType.DeltaResourceSet;
 
+        /// <summary>
+        /// Gets the Resources, Deleted Resources, and delta links of this ResourceSet.
+        /// </summary>
+        public override IList<ODataItemBase> Items { get; }
     }
 }

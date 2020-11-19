@@ -128,14 +128,14 @@ namespace Microsoft.AspNet.OData.Formatter.Deserialization
                        
             if (resourceSet.ResourceSetType == ResourceSetType.ResourceSet)
             {
-                foreach (ODataResourceWrapper resourceWrapper in resourceSet.Resources)
+                foreach (ODataResourceWrapper resourceWrapper in resourceSet.Items)
                 {
                     yield return deserializer.ReadInline(resourceWrapper, elementType, readContext);
                 }
             }
             else
             {
-                foreach (ODataItemBase odataItemBase in resourceSet.Resources)
+                foreach (ODataItemBase odataItemBase in resourceSet.Items)
                 {
                     ODataResourceWrapper resourceWrapper = odataItemBase as ODataResourceWrapper;
 

@@ -344,7 +344,9 @@ namespace Microsoft.AspNet.OData.Formatter
             int i = 0;
             foreach (object item in sources)
             {
-                object newItem = CovertResourceId(item, resourceSet.Resources[i].ResourceBase, entityTypeReference,
+				// Sreejith -- should this code be assuming the item is an ODataResourceWrapper? What if it is not?
+                Contract.Assert(resourceSet.Items[i] is ODataResourceWrapper, "CovertResourceSetIds called for a non ResourceSetWrapper item");
+                object newItem = CovertResourceId(item, ((ODataResourceWrapper)resourceSet.Items[i]).ResourceBase, entityTypeReference,
                     readContext);
                 i++;
                 yield return newItem;
